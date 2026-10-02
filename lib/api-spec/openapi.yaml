@@ -1,0 +1,327 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: 5amsena
+    description: Live Fantasy Premier League intelligence and predictions
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /5amsena/overview:
+    get:
+      operationId: getFantasyOverview
+      tags: [5amsena]
+      summary: Get the live Gameweek overview
+      responses:
+        "200":
+          description: Live overview derived from official FPL data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FantasyOverview"
+        "502":
+          description: The upstream FPL service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /5amsena/fixtures:
+    get:
+      operationId: getFantasyFixtures
+      tags: [5amsena]
+      summary: Get upcoming fixtures with transparent baseline predictions
+      parameters:
+        - name: event
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "400":
+          description: Invalid Gameweek
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "200":
+          description: Predicted fixtures for a Gameweek
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FixturePrediction"
+        "502":
+          description: The upstream FPL service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /5amsena/players:
+    get:
+      operationId: searchFantasyPlayers
+      tags: [5amsena]
+      summary: Search live FPL players and their expected points
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 80
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "400":
+          description: Invalid search parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "200":
+          description: Matching players with expected-points estimates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlayerProjection"
+        "502":
+          description: The upstream FPL service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /5amsena/best-xi:
+    get:
+      operationId: getFantasyBestXi
+      tags: [5amsena]
+      summary: Build an optimized, formation-valid Fantasy XI
+      parameters:
+        - name: event
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "400":
+          description: Invalid Gameweek
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "200":
+          description: Best XI satisfying formation and club constraints
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BestXi"
+        "502":
+          description: The upstream FPL service is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    DataStatus:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [live]
+        season:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        playerCount:
+          type: integer
+        predictionMethod:
+          type: string
+      required: [mode, season, updatedAt, playerCount, predictionMethod]
+    Gameweek:
+      type: object
+      properties:
+        current:
+          type: ["integer", "null"]
+        target:
+          type: ["integer", "null"]
+        targetName:
+          type: string
+        deadline:
+          type: ["string", "null"]
+          format: date-time
+        deadlineLabel:
+          type: string
+      required: [current, target, targetName, deadline, deadlineLabel]
+    FantasyOverview:
+      type: object
+      properties:
+        dataStatus:
+          $ref: "#/components/schemas/DataStatus"
+        gameweek:
+          $ref: "#/components/schemas/Gameweek"
+        upcomingFixtures:
+          type: integer
+        predictedFixtures:
+          type: integer
+        topPlayers:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerProjection"
+        biggestSignal:
+          type: string
+        biggestRisk:
+          type: string
+      required: [dataStatus, gameweek, upcomingFixtures, predictedFixtures, topPlayers, biggestSignal, biggestRisk]
+    PlayerProjection:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        webName:
+          type: string
+        teamId:
+          type: integer
+        teamName:
+          type: string
+        teamShortName:
+          type: string
+        position:
+          type: string
+          enum: [goalkeeper, defender, midfielder, forward]
+        price:
+          type: number
+        expectedPoints:
+          type: number
+        form:
+          type: number
+        selectedByPercent:
+          type: number
+        totalPoints:
+          type: integer
+        minutes:
+          type: integer
+        goals:
+          type: integer
+        assists:
+          type: integer
+        photoUrl:
+          type: ["string", "null"]
+        opponent:
+          type: ["string", "null"]
+        fixtureDifficulty:
+          type: ["integer", "null"]
+        availability:
+          type: string
+      required: [id, name, webName, teamId, teamName, teamShortName, position, price, expectedPoints, form, selectedByPercent, totalPoints, minutes, goals, assists, photoUrl, opponent, fixtureDifficulty, availability]
+    FixturePrediction:
+      type: object
+      properties:
+        id:
+          type: integer
+        event:
+          type: integer
+        kickoffTime:
+          type: ["string", "null"]
+          format: date-time
+        homeTeamId:
+          type: integer
+        homeTeam:
+          type: string
+        homeShortName:
+          type: string
+        awayTeamId:
+          type: integer
+        awayTeam:
+          type: string
+        awayShortName:
+          type: string
+        homeWin:
+          type: number
+        draw:
+          type: number
+        awayWin:
+          type: number
+        expectedHomeGoals:
+          type: number
+        expectedAwayGoals:
+          type: number
+        confidence:
+          type: string
+          enum: [low, medium, high]
+        explanation:
+          type: array
+          items:
+            type: string
+      required: [id, event, kickoffTime, homeTeamId, homeTeam, homeShortName, awayTeamId, awayTeam, awayShortName, homeWin, draw, awayWin, expectedHomeGoals, expectedAwayGoals, confidence, explanation]
+    BestXi:
+      type: object
+      properties:
+        event:
+          type: ["integer", "null"]
+        formation:
+          type: string
+        totalExpectedPoints:
+          type: number
+        captainId:
+          type: integer
+        viceCaptainId:
+          type: integer
+        players:
+          type: array
+          minItems: 11
+          maxItems: 11
+          items:
+            $ref: "#/components/schemas/PlayerProjection"
+        maxPerClub:
+          type: integer
+        formationValid:
+          type: boolean
+        method:
+          type: string
+      required: [event, formation, totalExpectedPoints, captainId, viceCaptainId, players, maxPerClub, formationValid, method]
+

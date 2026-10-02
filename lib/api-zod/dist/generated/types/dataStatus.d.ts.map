@@ -1,0 +1,1 @@
+{"version":3,"file":"dataStatus.d.ts","sourceRoot":"","sources":["../../../src/generated/types/dataStatus.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,kBAAkB,CAAC;AAEvD,MAAM,WAAW,UAAU;IACzB,IAAI,EAAE,cAAc,CAAC;IACrB,MAAM,EAAE,MAAM,CAAC;IACf,SAAS,EAAE,IAAI,CAAC;IAChB,WAAW,EAAE,MAAM,CAAC;IACpB,gBAAgB,EAAE,MAAM,CAAC;CAC1B"}
